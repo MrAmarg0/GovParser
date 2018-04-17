@@ -104,3 +104,24 @@ def addComment(comment, msg):
         return comment + '. ' + msg
     else:
         return comment + msg
+
+def getEstateComment(estatesTd):
+    comment = ''
+    for i in range(0, len(estatesTd)):
+        if estatesTd[i] is not None:
+            comment += estatesTd[i] + ' '
+    if len(comment) != 0:
+        return comment[0:len(comment) - 1]
+
+def haveOwnEstate(paramSearch):
+    for i in paramSearch:
+        if i.text == "принадлежащие на праве собственности":
+            return True
+    return False
+
+
+def haveUseEstate(paramSearch):
+    for i in paramSearch:
+        if i.text == "находящиеся в пользовании":
+            return True
+    return False

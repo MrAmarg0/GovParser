@@ -21,6 +21,9 @@ for i in deputLines:
         tree = html.fromstring(htmlResult.text.encode('utf8'))
         table = tree.xpath('//div[@class="round-block rb-no-top-corn tab-2-box"]')[0]
         parts = table.xpath('//div[@class="c-tab-2"]')
+        paramSearch = table.xpath('//ul[@class="param-search"]')
+        haveOwnEstate = util.haveOwnEstate(paramSearch[1])
+        haveUseEstate = util.haveUseEstate(paramSearch[1])
 
         firstPart = parts[0]
         if len(parts) > 1:
@@ -80,80 +83,81 @@ for i in deputLines:
         deputStruct["real_estates"] = []
 
         #Недвижимость в собственности
-        estatesTr = firstPart.xpath('//table[@class="data-2 data-2-has-even"]')[1].xpath('tr')
-        curOwner = ''
-        for i in range(1, len(estatesTr)):
-            try:
-                estatesTd = estatesTr[i].xpath('td')
+        if (haveOwnEstate):
+            estatesTr = firstPart.xpath('//table[@class="data-2 data-2-has-even"]')[1].xpath('tr')
+            curOwner = ''
+            for i in range(1, len(estatesTr)):
+                try:
+                    estatesTd = estatesTr[i].xpath('td')
 
-                #Комментарий
-                comment = ''
-
-
-                #Владелец
-                owner = estatesTd[0].text
-                if estatesTd[1].text == None:
-                    continue
-                owner = util.getOwner(owner, curOwner)
-                curOwner = owner
-                relative = util.getRelative(owner, deputStruct["person"]["name"])
+                    #Комментарий
+                    comment = ''
 
 
-                #Тип
-                rawType = estatesTd[1].text
-                type = util.getEstateType(rawType)
-                if rawType.lower() != type.lower():
-                    comment = util.addComment(comment, rawType)
+                    #Владелец
+                    owner = estatesTd[0].text
+                    if estatesTd[1].text == None:
+                        continue
+                    owner = util.getOwner(owner, curOwner)
+                    curOwner = owner
+                    relative = util.getRelative(owner, deputStruct["person"]["name"])
 
-                #Площадь
-                rawSquare = estatesTd[2].text
-                needComment = util.needSquareComment(rawSquare)
-                if needComment:
-                    comment = util.addComment(comment, rawSquare)
-                square = util.getSquare(estatesTd[2].text)
 
-                #Регион
-                country = estatesTd[3].text
+                    #Тип
+                    rawType = estatesTd[1].text
+                    type = util.getEstateType(rawType)
 
-                #Право собственности
-                own_type = util.getOwnType(rawType, 'В собственности')
+                    #Площадь
+                    rawSquare = estatesTd[2].text
+                    square = util.getSquare(estatesTd[2].text)
 
-                share = estatesTd[1].text
-                if share.find("долевая") != -1:
-                    shareType = "Долевая собственность"
+                    #Регион
+                    country = estatesTd[3].text
 
-                    amount = util.getAmountShare(share)
-                    if amount is None:
-                        comment = util.addComment(comment, 'Долевая собственность: ' + share)
-                        amount = "null"
+                    #Право собственности
+                    own_type = util.getOwnType(rawType, 'В собственности')
 
-                    share_amount = int(amount[0]) / int(amount[1])
-                    share_amount = util.getRoundEstateSize(share_amount)
-                elif share.lower().find('совместная собственность') != -1:
-                    shareType = "Совместная собственность"
-                    share_amount = "null"
-                else:
-                    shareType = "Индивидуальная"
-                    share_amount = "null"
+                    comment = util.getEstateComment([estatesTd[1].text, estatesTd[2].text, estatesTd[3].text])
+                    share = estatesTd[1].text
+                    if share.find("долевая") != -1:
+                        shareType = "Долевая собственность"
 
-                deputStruct["real_estates"].append({
-                    "name": "",
-                    "type": type,
-                    "square": square,
-                    "country": country,
-                    "region": "null",
-                    "comment": comment,
-                    "own_type": own_type,
-                    "share_type": shareType,
-                    "share_amount": share_amount,
-                    "relative": relative
-                })
-            except Exception as e:
-                print(e, deputProps[0], deputProps[3])
-                valid = False
-        if (len(firstPart.xpath('//table[@class="data-2 data-2-has-even"]')) > 3):
+                        amount = util.getAmountShare(share)
+                        if amount is None:
+                            comment = util.addComment(comment, 'Долевая собственность: ' + share)
+                            amount = "null"
+
+                        share_amount = int(amount[0]) / int(amount[1])
+                        share_amount = util.getRoundEstateSize(share_amount)
+                    elif share.lower().find('совместная собственность') != -1:
+                        shareType = "Совместная собственность"
+                        share_amount = "null"
+                    else:
+                        shareType = "Индивидуальная"
+                        share_amount = "null"
+
+                    deputStruct["real_estates"].append({
+                        "name": rawType,
+                        "type": type,
+                        "square": square,
+                        "country": country,
+                        "region": "null",
+                        "comment": comment,
+                        "own_type": own_type,
+                        "share_type": shareType,
+                        "share_amount": share_amount,
+                        "relative": relative
+                    })
+                except Exception as e:
+                    print(e, deputProps[0], deputProps[3])
+                    valid = False
+        if (haveUseEstate):
             #Недвижимость в пользовании
-            estatesTr = firstPart.xpath('//table[@class="data-2 data-2-has-even"]')[2].xpath('tr')
+            if (haveOwnEstate):
+                tableId = 2
+            else:
+                tableId = 1
+            estatesTr = firstPart.xpath('//table[@class="data-2 data-2-has-even"]')[tableId].xpath('tr')
             curOwner = ''
             for i in range(1, len(estatesTr)):
                 try:
@@ -172,14 +176,9 @@ for i in deputLines:
                     #Тип
                     rawType = estatesTd[1].text
                     type = util.getEstateType(rawType)
-                    if rawType.lower() != type.lower():
-                        comment = util.addComment(comment, rawType)
 
                     #Площадь
                     rawSquare = estatesTd[2].text
-                    needComment = util.needSquareComment(rawSquare)
-                    if needComment:
-                        comment = util.addComment(comment, rawSquare)
                     square = util.getSquare(estatesTd[2].text)
 
 
@@ -189,6 +188,7 @@ for i in deputLines:
                     #Право собственности
                     own_type = util.getOwnType(rawType,'В пользовании')
 
+                    comment = util.getEstateComment([estatesTd[1].text, estatesTd[2].text, estatesTd[3].text])
                     share = estatesTd[1].text
                     if share.find("долевая") != -1:
                         shareType = "Долевая собственность"
@@ -199,7 +199,7 @@ for i in deputLines:
                     share_amount = "null"
 
                     deputStruct["real_estates"].append({
-                        "name": "",
+                        "name": rawType,
                         "type": type,
                         "square": square,
                         "country": country,
