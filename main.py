@@ -5,6 +5,7 @@ import json
 import util
 
 deputFile = open('deputies.txt', mode='r',encoding= 'utf8', buffering=1)
+logFile = open('log.txt', mode='w', encoding='utf8', buffering=1)
 deputLines = deputFile.readlines()
 deputFile.close()
 
@@ -41,7 +42,7 @@ for i in deputLines:
             "family_name": nameParts[0],
             "given_name": nameParts[1],
             "patronymic_name": nameParts[2],
-            "role": "Депутат Государственной Думы"
+            "role": util.getRole(deputProps[2])
         }
 
         deputStruct["office"] = {
@@ -149,7 +150,7 @@ for i in deputLines:
                         "relative": relative
                     })
                 except Exception as e:
-                    print(e, deputProps[0], deputProps[3])
+                    util.writeLog([e,deputProps[0],deputProps[3]], logFile)
                     valid = False
         if (haveUseEstate):
             #Недвижимость в пользовании
@@ -211,7 +212,7 @@ for i in deputLines:
                         "relative": relative
                     })
                 except Exception as e:
-                    print(e, deputProps[0], deputProps[3])
+                    util.writeLog([e, deputProps[0], deputProps[3]], logFile)
                     valid = False
 
         if secondPart != None:
@@ -231,7 +232,7 @@ for i in deputLines:
                 full_name = vehiclesTd[2].text
 
                 #Тип
-                type = util.carType(vehiclesTd[1].text.title())
+                type = util.carType(vehiclesTd[1].text.title(), full_name)
 
                 deputStruct["vehicles"].append({
                     "full_name": full_name,

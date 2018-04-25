@@ -1,7 +1,11 @@
-def carType(car):
-    if type == 'Автомобили легковые':
+def carType(type, name):
+    type = type.lower()
+    name = name.lower()
+    if name.find('прицеп') != -1 or name.find('автоприцеп') != -1:
+        return 'Автоприцеп'
+    elif type == 'автомобили легковые':
         return 'Автомобиль легковой'
-    return car
+    return type
 
 def getRelative(owner, name):
     if owner == name:
@@ -125,3 +129,15 @@ def haveUseEstate(paramSearch):
         if i.text == "находящиеся в пользовании":
             return True
     return False
+
+
+def getRole(role):
+    if role is not None:
+        return role
+    else:
+        return ""
+
+def writeLog(lineArgs, log):
+    for i in lineArgs:
+        log.write(str(i) + " ")
+    log.write("\n")
